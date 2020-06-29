@@ -1,0 +1,26 @@
+{
+  "extends": "tslint:recommended",
+  "rulesDirectory": [],
+  "rules": {
+    "no-conditional-assignment": true,
+    "no-console": false,
+    "no-duplicate-variable": true,
+    "no-shadowed-variable": true,
+    "no-unused-expression": true,
+    "no-var-keyword": true,
+    "triple-equals": [true, "allow-null-check"],
+    "eofline": true,
+    "indent": [true, "spaces"],
+    "max-line-length": [true, 140],
+    "no-trailing-whitespace": true,
+    "trailing-comma": [true, {"multiline": "never", "singleline": "never"}],
+    "comment-format": [true, "check-space"],
+    "jsdoc-format": true,
+    "no-consecutive-blank-lines": true,
+    "quotemark": [true, "single", "avoid-escape"],
+    "semicolon": [true, "always"],
+    "variable-name": [true, "check-format", "allow-leading-underscore", "ban-keywords"],
+    "no-unused-variable": true,
+    "deprecation": {"severity": "warning"}
+  }
+}
