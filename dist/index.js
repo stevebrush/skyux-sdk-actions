@@ -15136,24 +15136,24 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTag = exports.isPush = exports.isTag = exports.isPullRequest = void 0;
+exports.isTag = exports.isPush = exports.isPullRequest = exports.getTag = void 0;
 const github = __importStar(__webpack_require__(861));
-function isPullRequest() {
-    return (github.context.eventName === 'pull_request');
-}
-exports.isPullRequest = isPullRequest;
-function isTag() {
-    return (github.context.ref.indexOf('refs/tags/') === 0);
-}
-exports.isTag = isTag;
-function isPush() {
-    return (github.context.ref.indexOf('refs/heads/') === 0);
-}
-exports.isPush = isPush;
 function getTag() {
     return github.context.ref.replace('refs/tags/', '');
 }
 exports.getTag = getTag;
+function isPullRequest() {
+    return (github.context.eventName === 'pull_request');
+}
+exports.isPullRequest = isPullRequest;
+function isPush() {
+    return (github.context.ref.indexOf('refs/heads/') === 0);
+}
+exports.isPush = isPush;
+function isTag() {
+    return (github.context.ref.indexOf('refs/tags/') === 0);
+}
+exports.isTag = isTag;
 
 
 /***/ }),

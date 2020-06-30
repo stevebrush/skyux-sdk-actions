@@ -2,9 +2,17 @@ import * as core from '@actions/core';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
-import { notifySlack } from './notify-slack';
-import { spawn } from './spawn';
-import { getTag } from './utils';
+import {
+  notifySlack
+} from './notify-slack';
+
+import {
+  spawn
+} from './spawn';
+
+import {
+  getTag
+} from './utils';
 
 export async function npmPublish() {
 
