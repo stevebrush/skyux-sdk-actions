@@ -25,7 +25,7 @@ export async function npmPublish() {
   const npmFilePath = path.resolve(process.cwd(), '.npmrc');
   const npmToken = core.getInput('npm-token');
 
-  const repository = process.env.GITHUB_REPOSITORY || '';
+  const repository = process.env.GITHUB_REPOSITORY;
   const changelogUrl = `https://github.com/${repository}/blob/${version}/CHANGELOG.md`;
 
   core.info(`Preparing to publish ${packageName}@${version} to NPM...`);
@@ -40,8 +40,8 @@ export async function npmPublish() {
     await notifySlack(`${successMessage}\n${changelogUrl}`);
   } catch (err) {
     const errorMessage = `${packageName}@${version} failed to publish to NPM.`;
+    core.setFailed(err.message);
     core.setFailed(errorMessage);
-    console.log(err);
     await notifySlack(errorMessage);
   }
 
