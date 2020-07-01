@@ -50,8 +50,7 @@ async function commitBaselineScreenshots(repository: string, buildId: string) {
 }
 
 async function commitFailureScreenshots(buildId: string) {
-  const branch = buildId || 'master';
-
+  const branch = buildId;
   const accessToken = core.getInput('github-token');
   const workingDirectory = core.getInput('working-directory');
   const repoUrl = `https://${accessToken}@github.com/blackbaud/skyux-visual-test-results.git`;

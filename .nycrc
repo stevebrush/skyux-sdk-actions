@@ -4,13 +4,13 @@
   "check-coverage": true,
   "reporter": [
     "html",
-    "json",
     "text"
   ],
   "include": [
     "src/*.ts"
   ],
   "exclude": [
+    "src/main.ts",
     "src/*.spec.ts"
   ]
 }

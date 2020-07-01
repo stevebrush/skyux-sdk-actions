@@ -6,11 +6,7 @@ import {
   spawn as crossSpawn
 } from 'cross-spawn';
 
-export async function spawn(
-  command: string,
-  args: string[] = [],
-  spawnOptions?: child_process.SpawnOptions
-): Promise<string> {
+export async function spawn(command: string, args: string[], spawnOptions?: child_process.SpawnOptions): Promise<string> {
 
   const defaults: child_process.SpawnOptions = {
     stdio: 'pipe',
@@ -24,8 +20,10 @@ export async function spawn(
     let output: string = '';
     if (childProcess.stdout) {
       childProcess.stdout.on('data', (data) => {
+        /*istanbul ignore else*/
         if (data) {
           const fragment = data.toString('utf8').trim();
+          /*istanbul ignore else*/
           if (fragment) {
             core.info(fragment);
             output += fragment;

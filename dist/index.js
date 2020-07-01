@@ -7128,7 +7128,7 @@ function commitBaselineScreenshots(repository, buildId) {
 }
 function commitFailureScreenshots(buildId) {
     return __awaiter(this, void 0, void 0, function* () {
-        const branch = buildId || 'master';
+        const branch = buildId;
         const accessToken = core.getInput('github-token');
         const workingDirectory = core.getInput('working-directory');
         const repoUrl = `https://${accessToken}@github.com/blackbaud/skyux-visual-test-results.git`;
@@ -17512,7 +17512,7 @@ exports.spawn = void 0;
 const core = __webpack_require__(470);
 const path = __webpack_require__(622);
 const cross_spawn_1 = __webpack_require__(20);
-function spawn(command, args = [], spawnOptions) {
+function spawn(command, args, spawnOptions) {
     return __awaiter(this, void 0, void 0, function* () {
         const defaults = {
             stdio: 'pipe',
@@ -17523,8 +17523,10 @@ function spawn(command, args = [], spawnOptions) {
             let output = '';
             if (childProcess.stdout) {
                 childProcess.stdout.on('data', (data) => {
+                    /*istanbul ignore else*/
                     if (data) {
                         const fragment = data.toString('utf8').trim();
+                        /*istanbul ignore else*/
                         if (fragment) {
                             core.info(fragment);
                             output += fragment;
