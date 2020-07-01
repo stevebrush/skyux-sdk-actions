@@ -3098,7 +3098,7 @@ function install() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield spawn_1.spawn('npm', ['ci']);
-            yield spawn_1.spawn('npm', ['install', '--no-save', '--no-package-lock', 'blackbaud/skyux-sdk-builder-config#enhancements']);
+            yield spawn_1.spawn('npm', ['install', '--no-save', '--no-package-lock', 'blackbaud/skyux-sdk-builder-config']);
         }
         catch (err) {
             core.setFailed('Packages installation failed.');
