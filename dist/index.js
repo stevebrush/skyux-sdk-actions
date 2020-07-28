@@ -2719,6 +2719,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
+const path = __webpack_require__(622);
 const npm_publish_1 = __webpack_require__(96);
 const screenshot_comparator_1 = __webpack_require__(453);
 const spawn_1 = __webpack_require__(820);
@@ -2732,7 +2733,7 @@ function runSkyUxCommand(command, args) {
 =====================================================
 `);
     return spawn_1.spawn('npx', [
-        '-p', '@skyux-sdk/cli@next',
+        '-p', '@skyux-sdk/cli',
         'skyux', command,
         '--logFormat', 'none',
         '--platform', 'gh-actions',
@@ -2763,6 +2764,7 @@ function install() {
 function build() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            yield runLifecycleHook('hook-before-script');
             yield runSkyUxCommand('build');
         }
         catch (err) {
@@ -2774,6 +2776,7 @@ function coverage() {
     return __awaiter(this, void 0, void 0, function* () {
         core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-coverage`);
         try {
+            yield runLifecycleHook('hook-before-script');
             yield runSkyUxCommand('test', ['--coverage', 'library']);
         }
         catch (err) {
@@ -2786,6 +2789,7 @@ function visual() {
         core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-visual`);
         const repository = process.env.GITHUB_REPOSITORY || '';
         try {
+            yield runLifecycleHook('hook-before-script');
             yield runSkyUxCommand('e2e');
             if (utils_1.isPush()) {
                 yield screenshot_comparator_1.checkNewBaselineScreenshots(repository, BUILD_ID);
@@ -2802,7 +2806,9 @@ function visual() {
 function buildLibrary() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            yield runLifecycleHook('hook-before-script');
             yield runSkyUxCommand('build-public-library');
+            yield runLifecycleHook('hook-after-build-public-library-success');
         }
         catch (err) {
             core.setFailed('Library build failed.');
@@ -2812,6 +2818,19 @@ function buildLibrary() {
 function publishLibrary() {
     return __awaiter(this, void 0, void 0, function* () {
         npm_publish_1.npmPublish();
+    });
+}
+function runLifecycleHook(name) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const scriptPath = core.getInput(name);
+        if (scriptPath) {
+            const basePath = path.join(process.cwd(), core.getInput('working-directory'));
+            const fullPath = path.join(basePath, scriptPath);
+            core.info(`Running '${name}' lifecycle hook: ${fullPath}`);
+            const script = require(fullPath);
+            yield script.runAsync();
+            core.info(`Lifecycle hook '${name}' successfully executed.`);
+        }
     });
 }
 function run() {

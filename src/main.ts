@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import * as path from 'path';
 
 import {
   npmPublish
@@ -29,7 +30,7 @@ function runSkyUxCommand(command: string, args?: string[]): Promise<string> {
 `);
 
   return spawn('npx', [
-    '-p', '@skyux-sdk/cli@next',
+    '-p', '@skyux-sdk/cli',
     'skyux', command,
     '--logFormat', 'none',
     '--platform', 'gh-actions',
@@ -56,6 +57,7 @@ async function install(): Promise<void> {
 
 async function build() {
   try {
+    await runLifecycleHook('hook-before-script');
     await runSkyUxCommand('build');
   } catch (err) {
     core.setFailed('Build failed.');
@@ -66,6 +68,7 @@ async function coverage() {
   core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-coverage`);
 
   try {
+    await runLifecycleHook('hook-before-script');
     await runSkyUxCommand('test', ['--coverage', 'library']);
   } catch (err) {
     core.setFailed('Code coverage failed.');
@@ -77,6 +80,7 @@ async function visual() {
 
   const repository = process.env.GITHUB_REPOSITORY || '';
   try {
+    await runLifecycleHook('hook-before-script');
     await runSkyUxCommand('e2e');
     if (isPush()) {
       await checkNewBaselineScreenshots(repository, BUILD_ID);
@@ -91,7 +95,9 @@ async function visual() {
 
 async function buildLibrary() {
   try {
+    await runLifecycleHook('hook-before-script');
     await runSkyUxCommand('build-public-library');
+    await runLifecycleHook('hook-after-build-public-library-success');
   } catch (err) {
     core.setFailed('Library build failed.');
   }
@@ -99,6 +105,18 @@ async function buildLibrary() {
 
 async function publishLibrary() {
   npmPublish();
+}
+
+async function runLifecycleHook(name: string) {
+  const scriptPath = core.getInput(name);
+  if (scriptPath) {
+    const basePath = path.join(process.cwd(), core.getInput('working-directory'));
+    const fullPath = path.join(basePath, scriptPath);
+    core.info(`Running '${name}' lifecycle hook: ${fullPath}`);
+    const script = require(fullPath);
+    await script.runAsync();
+    core.info(`Lifecycle hook '${name}' successfully executed.`);
+  }
 }
 
 async function run(): Promise<void> {
