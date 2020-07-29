@@ -1467,17 +1467,32 @@ function npmPublish() {
         core.info(`Preparing to publish ${packageName}@${version} to NPM from ${distPath}...`);
         yield fs.ensureFile(npmFilePath);
         fs.writeFileSync(npmFilePath, `//registry.npmjs.org/:_authToken=${npmToken}`);
+        const npmArgs = [
+            'publish', '--access', 'public',
+            '--tag', npmTag
+        ];
+        const isDryRun = (core.getInput('npm-dry-run') === 'true');
+        if (isDryRun) {
+            npmArgs.push('--dry-run');
+        }
         try {
-            yield spawn_1.spawn('npm', ['publish', '--access', 'public', '--tag', npmTag], { cwd: distPath });
+            yield spawn_1.spawn('npm', npmArgs, {
+                cwd: distPath,
+                stdio: 'inherit'
+            });
             const successMessage = `Successfully published \`${packageName}@${version}\` to NPM.`;
             core.info(successMessage);
-            yield notify_slack_1.notifySlack(`${successMessage}\n${changelogUrl}`);
+            if (!isDryRun) {
+                yield notify_slack_1.notifySlack(`${successMessage}\n${changelogUrl}`);
+            }
         }
         catch (err) {
             const errorMessage = `\`${packageName}@${version}\` failed to publish to NPM.`;
             core.setFailed(err.message);
             core.setFailed(errorMessage);
-            yield notify_slack_1.notifySlack(errorMessage);
+            if (!isDryRun) {
+                yield notify_slack_1.notifySlack(errorMessage);
+            }
         }
         fs.removeSync(npmFilePath);
     });
@@ -2829,7 +2844,6 @@ function visual() {
 function buildLibrary() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield runLifecycleHook('hook-before-script');
             yield runSkyUxCommand('build-public-library');
             yield runLifecycleHook('hook-after-build-public-library-success');
         }
@@ -2862,13 +2876,13 @@ function run() {
         core.exportVariable('BROWSER_STACK_PROJECT', core.getInput('browser-stack-project') || process.env.GITHUB_REPOSITORY);
         yield install();
         yield installCerts();
-        yield build();
         // Don't run tests for tags.
         if (utils_1.isTag()) {
             yield buildLibrary();
             yield publishLibrary();
         }
         else {
+            yield build();
             yield coverage();
             yield visual();
             yield buildLibrary();
@@ -14704,6 +14718,7 @@ function spawn(command, args, spawnOptions) {
             stdio: 'pipe',
             cwd: path.resolve(process.cwd(), core.getInput('working-directory'))
         };
+        core.info(`Running child process: ${command} ${args.join(' ')}...`);
         const childProcess = cross_spawn_1.spawn(command, args, Object.assign(Object.assign({}, defaults), spawnOptions));
         return new Promise((resolve, reject) => {
             let output = '';

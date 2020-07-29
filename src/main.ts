@@ -116,7 +116,6 @@ async function visual() {
 
 async function buildLibrary() {
   try {
-    await runLifecycleHook('hook-before-script');
     await runSkyUxCommand('build-public-library');
     await runLifecycleHook('hook-after-build-public-library-success');
   } catch (err) {
@@ -149,13 +148,13 @@ async function run(): Promise<void> {
 
   await install();
   await installCerts();
-  await build();
 
   // Don't run tests for tags.
   if (isTag()) {
     await buildLibrary();
     await publishLibrary();
   } else {
+    await build();
     await coverage();
     await visual();
     await buildLibrary();
