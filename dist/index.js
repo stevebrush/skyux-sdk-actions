@@ -2804,17 +2804,20 @@ const spawn_1 = __webpack_require__(820);
 const utils_1 = __webpack_require__(611);
 // Generate a unique build name to be used by BrowserStack.
 const BUILD_ID = `${(_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')[1]}-${process.env.GITHUB_EVENT_NAME}-${process.env.GITHUB_RUN_ID}-${Math.random().toString().slice(2, 7)}`;
-function runSkyUxCommand(command, args) {
+function runSkyUxCommand(command, args, platform) {
     core.info(`
 =====================================================
 > Running SKY UX command: '${command}'
 =====================================================
 `);
+    if (!platform) {
+        platform = "gh-actions" /* GitHubActions */;
+    }
     return spawn_1.spawn('npx', [
         '-p', '@skyux-sdk/cli',
         'skyux', command,
         '--logFormat', 'none',
-        '--platform', 'gh-actions',
+        '--platform', platform,
         ...args || ''
     ]);
 }
@@ -2881,7 +2884,7 @@ function coverage() {
         core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-coverage`);
         try {
             yield runLifecycleHook('hook-before-script');
-            yield runSkyUxCommand('test', ['--coverage', 'library']);
+            yield runSkyUxCommand('test', ['--coverage', 'library'], "none" /* None */);
         }
         catch (err) {
             core.setFailed('Code coverage failed.');
@@ -2926,14 +2929,19 @@ function publishLibrary() {
         npm_publish_1.npmPublish();
     });
 }
+/**
+ * Get the last commit message.
+ * @see https://stackoverflow.com/a/7293026/6178885
+ */
+function getLastCommitMessage() {
+    return spawn_1.spawn('git', ['log', '-1', '--pretty=%B', '--oneline'], {
+        cwd: process.cwd()
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         if (utils_1.isPush()) {
-            // Get the last commit message.
-            // See: https://stackoverflow.com/a/7293026/6178885
-            const message = yield spawn_1.spawn('git', ['log', '-1', '--pretty=%B', '--oneline'], {
-                cwd: process.cwd()
-            });
+            const message = yield getLastCommitMessage();
             if (message.indexOf('[ci skip]') > -1) {
                 core.info('Found "[ci skip]" in last commit message. Aborting build and test run.');
                 process.exit(0);

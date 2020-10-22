@@ -31,13 +31,17 @@ const BUILD_ID = `${process.env.GITHUB_REPOSITORY?.split('/')[1]}-${process.env.
 function runSkyUxCommand(
   command: string,
   args?: string[],
-  platform: SkyUxCIPlatform = SkyUxCIPlatform.GitHubActions
+  platform?: SkyUxCIPlatform
 ): Promise<string> {
   core.info(`
 =====================================================
 > Running SKY UX command: '${command}'
 =====================================================
 `);
+
+  if (!platform) {
+    platform = SkyUxCIPlatform.GitHubActions;
+  }
 
   return spawn('npx', [
     '-p', '@skyux-sdk/cli',
