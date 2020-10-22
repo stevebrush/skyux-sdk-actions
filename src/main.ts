@@ -79,7 +79,7 @@ async function build() {
   }
 }
 
-async function coverage(configKey: SkyUxCIPlatformConfig | undefined) {
+async function coverage(configKey: SkyUxCIPlatformConfig) {
   core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-coverage`);
   try {
     await runLifecycleHook('hook-before-script');
@@ -90,7 +90,7 @@ async function coverage(configKey: SkyUxCIPlatformConfig | undefined) {
   }
 }
 
-async function visual(configKey: SkyUxCIPlatformConfig | undefined) {
+async function visual(configKey: SkyUxCIPlatformConfig) {
   core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-visual`);
   const repository = process.env.GITHUB_REPOSITORY || '';
   try {
@@ -142,7 +142,7 @@ async function run(): Promise<void> {
     }
   }
 
-  let configKey: SkyUxCIPlatformConfig;
+  let configKey = SkyUxCIPlatformConfig.GitHubActions;
 
   const browserStackAccessKey = core.getInput('browser-stack-access-key');
   if (browserStackAccessKey) {
@@ -151,7 +151,7 @@ async function run(): Promise<void> {
     core.exportVariable('BROWSER_STACK_USERNAME', core.getInput('browser-stack-username'));
     core.exportVariable('BROWSER_STACK_PROJECT', core.getInput('browser-stack-project') || process.env.GITHUB_REPOSITORY);
   } else {
-    core.warning('BrowserStack credentials could not be found. Running tests through the local instance of ChromeHeadless.');
+    core.warning('BrowserStack credentials could not be found. Tests will run through the local instance of ChromeHeadless.');
     configKey = SkyUxCIPlatformConfig.None;
   }
 

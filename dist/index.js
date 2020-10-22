@@ -2799,39 +2799,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const path = __webpack_require__(622);
 const npm_publish_1 = __webpack_require__(96);
+const run_skyux_command_1 = __webpack_require__(495);
 const screenshot_comparator_1 = __webpack_require__(453);
 const spawn_1 = __webpack_require__(820);
 const utils_1 = __webpack_require__(611);
 // Generate a unique build name to be used by BrowserStack.
 const BUILD_ID = `${(_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')[1]}-${process.env.GITHUB_EVENT_NAME}-${process.env.GITHUB_RUN_ID}-${Math.random().toString().slice(2, 7)}`;
-/**
- *
- * @param command The SKY UX CLI command to execute.
- * @param args Any command line arguments.
- * @param platformConfigKey The name of the CI platform config to use.
- */
-function runSkyUxCommand(command, args = [], platform = "gh-actions" /* GitHubActions */) {
-    core.info(`
-=====================================================
-> Running SKY UX command: '${command}'
-=====================================================
-`);
-    if (platform === "none" /* None */) {
-        // Run `ChromeHeadless` since it comes pre-installed on the CI machine.
-        args.push('--headless');
-    }
-    else {
-        args.concat([
-            '--platform', platform
-        ]);
-    }
-    return spawn_1.spawn('npx', [
-        '-p', '@skyux-sdk/cli',
-        'skyux', command,
-        '--logFormat', 'none',
-        ...args
-    ]);
-}
 /**
  * Runs lifecycle hook Node.js scripts. The script must export an async function named `runAsync`.
  * @example
@@ -2858,7 +2831,7 @@ function runLifecycleHook(name) {
 function installCerts() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield runSkyUxCommand('certs', ['install']);
+            yield run_skyux_command_1.runSkyUxCommand('certs', ['install']);
         }
         catch (err) {
             core.setFailed('SSL certificates installation failed.');
@@ -2882,7 +2855,7 @@ function build() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield runLifecycleHook('hook-before-script');
-            yield runSkyUxCommand('build');
+            yield run_skyux_command_1.runSkyUxCommand('build');
         }
         catch (err) {
             core.setFailed('Build failed.');
@@ -2890,12 +2863,12 @@ function build() {
         }
     });
 }
-function coverage() {
+function coverage(configKey) {
     return __awaiter(this, void 0, void 0, function* () {
         core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-coverage`);
         try {
             yield runLifecycleHook('hook-before-script');
-            yield runSkyUxCommand('test', ['--coverage', 'library'], "none" /* None */);
+            yield run_skyux_command_1.runSkyUxCommand('test', ['--coverage', 'library'], configKey);
         }
         catch (err) {
             core.setFailed('Code coverage failed.');
@@ -2903,13 +2876,13 @@ function coverage() {
         }
     });
 }
-function visual() {
+function visual(configKey) {
     return __awaiter(this, void 0, void 0, function* () {
         core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-visual`);
         const repository = process.env.GITHUB_REPOSITORY || '';
         try {
             yield runLifecycleHook('hook-before-script');
-            yield runSkyUxCommand('e2e');
+            yield run_skyux_command_1.runSkyUxCommand('e2e', [], configKey);
             if (utils_1.isPush()) {
                 yield screenshot_comparator_1.checkNewBaselineScreenshots(repository, BUILD_ID);
             }
@@ -2926,7 +2899,7 @@ function visual() {
 function buildLibrary() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield runSkyUxCommand('build-public-library');
+            yield run_skyux_command_1.runSkyUxCommand('build-public-library');
             yield runLifecycleHook('hook-after-build-public-library-success');
         }
         catch (err) {
@@ -2958,10 +2931,18 @@ function run() {
                 process.exit(0);
             }
         }
-        // Set environment variables so that BrowserStack launcher can read them.
-        core.exportVariable('BROWSER_STACK_ACCESS_KEY', core.getInput('browser-stack-access-key'));
-        core.exportVariable('BROWSER_STACK_USERNAME', core.getInput('browser-stack-username'));
-        core.exportVariable('BROWSER_STACK_PROJECT', core.getInput('browser-stack-project') || process.env.GITHUB_REPOSITORY);
+        let configKey = "gh-actions" /* GitHubActions */;
+        const browserStackAccessKey = core.getInput('browser-stack-access-key');
+        if (browserStackAccessKey) {
+            // Set environment variables so that BrowserStack launcher can read them.
+            core.exportVariable('BROWSER_STACK_ACCESS_KEY', browserStackAccessKey);
+            core.exportVariable('BROWSER_STACK_USERNAME', core.getInput('browser-stack-username'));
+            core.exportVariable('BROWSER_STACK_PROJECT', core.getInput('browser-stack-project') || process.env.GITHUB_REPOSITORY);
+        }
+        else {
+            core.warning('BrowserStack credentials could not be found. Tests will run through the local instance of ChromeHeadless.');
+            configKey = "none" /* None */;
+        }
         yield install();
         yield installCerts();
         // Don't run tests for tags.
@@ -2971,8 +2952,8 @@ function run() {
         }
         else {
             yield build();
-            yield coverage();
-            yield visual();
+            yield coverage(configKey);
+            yield visual(configKey);
             yield buildLibrary();
         }
     });
@@ -9240,6 +9221,46 @@ function resolveCommand(parsed) {
 }
 
 module.exports = resolveCommand;
+
+
+/***/ }),
+
+/***/ 495:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.runSkyUxCommand = void 0;
+const core = __webpack_require__(470);
+const spawn_1 = __webpack_require__(820);
+/**
+ *
+ * @param command The SKY UX CLI command to execute.
+ * @param args Any command line arguments.
+ * @param platformConfigKey The name of the CI platform config to use.
+ */
+function runSkyUxCommand(command, args = [], platform = "gh-actions" /* GitHubActions */) {
+    core.info(`
+=====================================================
+> Running SKY UX command: '${command}'
+=====================================================
+`);
+    if (platform === "none" /* None */) {
+        // Run `ChromeHeadless` since it comes pre-installed on the CI machine.
+        args.push('--headless');
+    }
+    else {
+        args.push('--platform', platform);
+    }
+    return spawn_1.spawn('npx', [
+        '-p', '@skyux-sdk/cli',
+        'skyux', command,
+        '--logFormat', 'none',
+        ...args
+    ]);
+}
+exports.runSkyUxCommand = runSkyUxCommand;
 
 
 /***/ }),
