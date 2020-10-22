@@ -2804,21 +2804,22 @@ const spawn_1 = __webpack_require__(820);
 const utils_1 = __webpack_require__(611);
 // Generate a unique build name to be used by BrowserStack.
 const BUILD_ID = `${(_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')[1]}-${process.env.GITHUB_EVENT_NAME}-${process.env.GITHUB_RUN_ID}-${Math.random().toString().slice(2, 7)}`;
-function runSkyUxCommand(command, args, platform) {
+function runSkyUxCommand(command, args = [], platform = "gh-actions" /* GitHubActions */) {
     core.info(`
 =====================================================
 > Running SKY UX command: '${command}'
 =====================================================
 `);
-    if (!platform) {
-        platform = "gh-actions" /* GitHubActions */;
+    if (platform && platform !== "none" /* None */) {
+        args.concat([
+            '--platform', platform
+        ]);
     }
     return spawn_1.spawn('npx', [
         '-p', '@skyux-sdk/cli',
         'skyux', command,
         '--logFormat', 'none',
-        '--platform', platform,
-        ...args || ''
+        ...args
     ]);
 }
 /**

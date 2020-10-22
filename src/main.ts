@@ -30,8 +30,8 @@ const BUILD_ID = `${process.env.GITHUB_REPOSITORY?.split('/')[1]}-${process.env.
 
 function runSkyUxCommand(
   command: string,
-  args?: string[],
-  platform?: SkyUxCIPlatform
+  args: string[] = [],
+  platform = SkyUxCIPlatform.GitHubActions
 ): Promise<string> {
   core.info(`
 =====================================================
@@ -39,16 +39,17 @@ function runSkyUxCommand(
 =====================================================
 `);
 
-  if (!platform) {
-    platform = SkyUxCIPlatform.GitHubActions;
+  if (platform && platform !== SkyUxCIPlatform.None) {
+    args.concat([
+      '--platform', platform
+    ]);
   }
 
   return spawn('npx', [
     '-p', '@skyux-sdk/cli',
     'skyux', command,
     '--logFormat', 'none',
-    '--platform', platform,
-    ...args || ''
+    ...args
   ]);
 }
 
