@@ -39,7 +39,11 @@ function runSkyUxCommand(
 =====================================================
 `);
 
-  if (platform && platform !== SkyUxCIPlatform.None) {
+  if (platform === SkyUxCIPlatform.None) {
+    args.push(
+      '--headless'
+    );
+  } else {
     args.concat([
       '--platform', platform
     ]);

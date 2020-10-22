@@ -2810,7 +2810,10 @@ function runSkyUxCommand(command, args = [], platform = "gh-actions" /* GitHubAc
 > Running SKY UX command: '${command}'
 =====================================================
 `);
-    if (platform && platform !== "none" /* None */) {
+    if (platform === "none" /* None */) {
+        args.push('--headless');
+    }
+    else {
         args.concat([
             '--platform', platform
         ]);
