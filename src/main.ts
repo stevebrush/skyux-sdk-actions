@@ -1,9 +1,14 @@
 import * as core from '@actions/core';
 import * as path from 'path';
+import { SkyUxCIPlatformConfig } from './ci-platform-config';
 
 import {
   npmPublish
 } from './npm-publish';
+
+import {
+  runSkyUxCommand
+} from './run-skyux-command';
 
 import {
   checkNewBaselineScreenshots,
@@ -20,53 +25,8 @@ import {
   isTag
 } from './utils';
 
-/**
- * A unique key used by SKY UX Builder to locate a configuration file.
- * @see https://github.com/blackbaud/skyux-sdk-builder/blob/master/cli/utils/config-resolver.js#L39-L44
- */
-const enum SkyUxCIPlatformConfig {
-  GitHubActions = 'gh-actions',
-  None = 'none'
-}
-
 // Generate a unique build name to be used by BrowserStack.
 const BUILD_ID = `${process.env.GITHUB_REPOSITORY?.split('/')[1]}-${process.env.GITHUB_EVENT_NAME}-${process.env.GITHUB_RUN_ID}-${Math.random().toString().slice(2,7)}`;
-
-/**
- *
- * @param command The SKY UX CLI command to execute.
- * @param args Any command line arguments.
- * @param platformConfigKey The name of the CI platform config to use.
- */
-function runSkyUxCommand(
-  command: string,
-  args: string[] = [],
-  platform = SkyUxCIPlatformConfig.GitHubActions
-): Promise<string> {
-  core.info(`
-=====================================================
-> Running SKY UX command: '${command}'
-=====================================================
-`);
-
-  if (platform === SkyUxCIPlatformConfig.None) {
-    // Run `ChromeHeadless` since it comes pre-installed on the CI machine.
-    args.push(
-      '--headless'
-    );
-  } else {
-    args.concat([
-      '--platform', platform
-    ]);
-  }
-
-  return spawn('npx', [
-    '-p', '@skyux-sdk/cli',
-    'skyux', command,
-    '--logFormat', 'none',
-    ...args
-  ]);
-}
 
 /**
  * Runs lifecycle hook Node.js scripts. The script must export an async function named `runAsync`.
@@ -119,23 +79,23 @@ async function build() {
   }
 }
 
-async function coverage() {
+async function coverage(configKey: SkyUxCIPlatformConfig | undefined) {
   core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-coverage`);
   try {
     await runLifecycleHook('hook-before-script');
-    await runSkyUxCommand('test', ['--coverage', 'library'], SkyUxCIPlatformConfig.None);
+    await runSkyUxCommand('test', ['--coverage', 'library'], configKey);
   } catch (err) {
     core.setFailed('Code coverage failed.');
     process.exit(1);
   }
 }
 
-async function visual() {
+async function visual(configKey: SkyUxCIPlatformConfig | undefined) {
   core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-visual`);
   const repository = process.env.GITHUB_REPOSITORY || '';
   try {
     await runLifecycleHook('hook-before-script');
-    await runSkyUxCommand('e2e');
+    await runSkyUxCommand('e2e', [], configKey);
     if (isPush()) {
       await checkNewBaselineScreenshots(repository, BUILD_ID);
     }
@@ -182,10 +142,18 @@ async function run(): Promise<void> {
     }
   }
 
-  // Set environment variables so that BrowserStack launcher can read them.
-  core.exportVariable('BROWSER_STACK_ACCESS_KEY', core.getInput('browser-stack-access-key'));
-  core.exportVariable('BROWSER_STACK_USERNAME', core.getInput('browser-stack-username'));
-  core.exportVariable('BROWSER_STACK_PROJECT', core.getInput('browser-stack-project') || process.env.GITHUB_REPOSITORY);
+  let configKey: SkyUxCIPlatformConfig;
+
+  const browserStackAccessKey = core.getInput('browser-stack-access-key');
+  if (browserStackAccessKey) {
+    // Set environment variables so that BrowserStack launcher can read them.
+    core.exportVariable('BROWSER_STACK_ACCESS_KEY', browserStackAccessKey);
+    core.exportVariable('BROWSER_STACK_USERNAME', core.getInput('browser-stack-username'));
+    core.exportVariable('BROWSER_STACK_PROJECT', core.getInput('browser-stack-project') || process.env.GITHUB_REPOSITORY);
+  } else {
+    core.warning('BrowserStack credentials could not be found. Running tests through the local instance of ChromeHeadless.');
+    configKey = SkyUxCIPlatformConfig.None;
+  }
 
   await install();
   await installCerts();
@@ -196,8 +164,8 @@ async function run(): Promise<void> {
     await publishLibrary();
   } else {
     await build();
-    await coverage();
-    await visual();
+    await coverage(configKey);
+    await visual(configKey);
     await buildLibrary();
   }
 }
