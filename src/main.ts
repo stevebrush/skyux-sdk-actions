@@ -20,7 +20,11 @@ import {
   isTag
 } from './utils';
 
-const enum SkyUxCIPlatform {
+/**
+ * A unique key used by SKY UX Builder to locate a configuration file.
+ * @see https://github.com/blackbaud/skyux-sdk-builder/blob/master/cli/utils/config-resolver.js#L39-L44
+ */
+const enum SkyUxCIPlatformConfig {
   GitHubActions = 'gh-actions',
   None = 'none'
 }
@@ -28,10 +32,16 @@ const enum SkyUxCIPlatform {
 // Generate a unique build name to be used by BrowserStack.
 const BUILD_ID = `${process.env.GITHUB_REPOSITORY?.split('/')[1]}-${process.env.GITHUB_EVENT_NAME}-${process.env.GITHUB_RUN_ID}-${Math.random().toString().slice(2,7)}`;
 
+/**
+ *
+ * @param command The SKY UX CLI command to execute.
+ * @param args Any command line arguments.
+ * @param platformConfigKey The name of the CI platform config to use.
+ */
 function runSkyUxCommand(
   command: string,
   args: string[] = [],
-  platform = SkyUxCIPlatform.GitHubActions
+  platform = SkyUxCIPlatformConfig.GitHubActions
 ): Promise<string> {
   core.info(`
 =====================================================
@@ -39,7 +49,8 @@ function runSkyUxCommand(
 =====================================================
 `);
 
-  if (platform === SkyUxCIPlatform.None) {
+  if (platform === SkyUxCIPlatformConfig.None) {
+    // Run `ChromeHeadless` since it comes pre-installed on the CI machine.
     args.push(
       '--headless'
     );
@@ -112,7 +123,7 @@ async function coverage() {
   core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-coverage`);
   try {
     await runLifecycleHook('hook-before-script');
-    await runSkyUxCommand('test', ['--coverage', 'library'], SkyUxCIPlatform.None);
+    await runSkyUxCommand('test', ['--coverage', 'library'], SkyUxCIPlatformConfig.None);
   } catch (err) {
     core.setFailed('Code coverage failed.');
     process.exit(1);

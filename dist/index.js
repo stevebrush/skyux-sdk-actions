@@ -2804,6 +2804,12 @@ const spawn_1 = __webpack_require__(820);
 const utils_1 = __webpack_require__(611);
 // Generate a unique build name to be used by BrowserStack.
 const BUILD_ID = `${(_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')[1]}-${process.env.GITHUB_EVENT_NAME}-${process.env.GITHUB_RUN_ID}-${Math.random().toString().slice(2, 7)}`;
+/**
+ *
+ * @param command The SKY UX CLI command to execute.
+ * @param args Any command line arguments.
+ * @param platformConfigKey The name of the CI platform config to use.
+ */
 function runSkyUxCommand(command, args = [], platform = "gh-actions" /* GitHubActions */) {
     core.info(`
 =====================================================
@@ -2811,6 +2817,7 @@ function runSkyUxCommand(command, args = [], platform = "gh-actions" /* GitHubAc
 =====================================================
 `);
     if (platform === "none" /* None */) {
+        // Run `ChromeHeadless` since it comes pre-installed on the CI machine.
         args.push('--headless');
     }
     else {
