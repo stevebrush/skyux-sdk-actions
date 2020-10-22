@@ -20,13 +20,18 @@ import {
   isTag
 } from './utils';
 
+const enum SkyUxCIPlatform {
+  GitHubActions = 'gh-actions',
+  None = 'none'
+}
+
 // Generate a unique build name to be used by BrowserStack.
 const BUILD_ID = `${process.env.GITHUB_REPOSITORY?.split('/')[1]}-${process.env.GITHUB_EVENT_NAME}-${process.env.GITHUB_RUN_ID}-${Math.random().toString().slice(2,7)}`;
 
 function runSkyUxCommand(
   command: string,
   args?: string[],
-  platform: string = 'gh-actions'
+  platform: SkyUxCIPlatform = SkyUxCIPlatform.GitHubActions
 ): Promise<string> {
   core.info(`
 =====================================================
@@ -98,7 +103,7 @@ async function coverage() {
   core.exportVariable('BROWSER_STACK_BUILD_ID', `${BUILD_ID}-coverage`);
   try {
     await runLifecycleHook('hook-before-script');
-    await runSkyUxCommand('test', ['--coverage', 'library']);
+    await runSkyUxCommand('test', ['--coverage', 'library'], SkyUxCIPlatform.None);
   } catch (err) {
     core.setFailed('Code coverage failed.');
     process.exit(1);
