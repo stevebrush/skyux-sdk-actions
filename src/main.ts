@@ -23,7 +23,11 @@ import {
 // Generate a unique build name to be used by BrowserStack.
 const BUILD_ID = `${process.env.GITHUB_REPOSITORY?.split('/')[1]}-${process.env.GITHUB_EVENT_NAME}-${process.env.GITHUB_RUN_ID}-${Math.random().toString().slice(2,7)}`;
 
-function runSkyUxCommand(command: string, args?: string[]): Promise<string> {
+function runSkyUxCommand(
+  command: string,
+  args?: string[],
+  platform: string = 'gh-actions'
+): Promise<string> {
   core.info(`
 =====================================================
 > Running SKY UX command: '${command}'
@@ -34,7 +38,7 @@ function runSkyUxCommand(command: string, args?: string[]): Promise<string> {
     '-p', '@skyux-sdk/cli',
     'skyux', command,
     '--logFormat', 'none',
-    '--platform', 'gh-actions',
+    '--platform', platform,
     ...args || ''
   ]);
 }
@@ -133,14 +137,20 @@ async function publishLibrary() {
   npmPublish();
 }
 
+/**
+ * Get the last commit message.
+ * @see https://stackoverflow.com/a/7293026/6178885
+ */
+function getLastCommitMessage(): Promise<string> {
+  return spawn('git', ['log', '-1', '--pretty=%B', '--oneline'], {
+    cwd: process.cwd()
+  });
+}
+
 async function run(): Promise<void> {
   if (isPush()) {
-    // Get the last commit message.
-    // See: https://stackoverflow.com/a/7293026/6178885
-    const message = await spawn('git', ['log', '-1', '--pretty=%B', '--oneline'], {
-      cwd: process.cwd()
-    });
 
+    const message = await getLastCommitMessage();
     if (message.indexOf('[ci skip]') > -1) {
       core.info('Found "[ci skip]" in last commit message. Aborting build and test run.');
       process.exit(0);
