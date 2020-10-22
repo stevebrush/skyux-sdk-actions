@@ -1,6 +1,9 @@
 import * as core from '@actions/core';
 import * as path from 'path';
-import { SkyUxCIPlatformConfig } from './ci-platform-config';
+
+import {
+  SkyUxCIPlatformConfig
+} from './ci-platform-config';
 
 import {
   npmPublish

@@ -1,9 +1,12 @@
-import * as spawnModule from './spawn';
+import {
+  SkyUxCIPlatformConfig
+} from './ci-platform-config';
 
 import {
   runSkyUxCommand
 } from './run-skyux-command';
-import { SkyUxCIPlatformConfig } from './ci-platform-config';
+
+import * as spawnModule from './spawn';
 
 describe('Run SKY UX command', () => {
 

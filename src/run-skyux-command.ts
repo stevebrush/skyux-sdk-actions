@@ -1,5 +1,8 @@
 import * as core from '@actions/core';
-import { SkyUxCIPlatformConfig } from './ci-platform-config';
+
+import {
+  SkyUxCIPlatformConfig
+} from './ci-platform-config';
 
 import {
   spawn
@@ -16,6 +19,7 @@ export function runSkyUxCommand(
   args: string[] = [],
   platform = SkyUxCIPlatformConfig.GitHubActions
 ): Promise<string> {
+
   core.info(`
 =====================================================
 > Running SKY UX command: '${command}'
